@@ -6,21 +6,20 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
 
+// 静的ファイルの提供
+app.use(express.static('public'));
+
 io.on('connection', (socket) => {
-    console.log("User connected:", socket.id);
-    
-    socket.on('answer', (data) => {
-        io.to(data.to).emit('answered', { signal: data.signal });
+    socket.on('join-room', (roomId, userId) => {
+        socket.join(roomId);
+        socket.to(roomId).broadcast.emit('user-connected', userId);
+        socket.on('disconnect', () => {
+            socket.to(roomId).broadcast.emit('user-disconnected', userId);
+        });
     });
-
-    // 他のユーザーに接続通知
-    socket.broadcast.emit('user-connected', socket.id);
 });
 
-server.listen(3000, () => {
-    console.log('listening on *:3000');
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+    console.log(`listening on *:${PORT}`);
 });
-
-
-
-// ...
